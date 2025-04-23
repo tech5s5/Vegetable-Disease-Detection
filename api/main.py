@@ -23,7 +23,7 @@ app.add_middleware(
 
 
 
-MODEL = tf.keras.models.load_model('../saved_models/1')
+MODEL = tf.keras.models.load_model('saved_models\\1')
 CLASS_NAMES = ['Potato Early Blight','Potato Late Blight','Healthy Potato','Tomato Early Blight','Tomato Late Blight','Healthy Tomato']
 
 @app.get("/ping")
