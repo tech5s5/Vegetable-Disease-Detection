@@ -14,14 +14,11 @@ origins = [
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials = True,
     allow_methods = ["*"],
     allow_headers = ["*"],
 )
-
-
-
 
 MODEL = tf.keras.models.load_model('saved_models\\1')
 CLASS_NAMES = ['Potato Early Blight','Potato Late Blight','Healthy Potato','Tomato Early Blight','Tomato Late Blight','Healthy Tomato']
