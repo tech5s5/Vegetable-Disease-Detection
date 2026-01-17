@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
+from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import numpy as np
@@ -22,29 +23,47 @@ app.add_middleware(
 
 MODEL = tf.keras.models.load_model('saved_models/1')
 CLASS_NAMES = ['Potato Early Blight','Potato Late Blight','Healthy Potato','Tomato Early Blight','Tomato Late Blight','Healthy Tomato']
+IMG_SIZE = 256
 
 @app.get("/ping")
 async def ping():
     return "Hello, I am alive"
 
-
 def read_file_as_image(data) -> np.ndarray:
-    image = np.array(Image.open(BytesIO(data)))
+    """
+    Reads uploaded image bytes and converts them into
+    a (256, 256, 3) numpy array WITHOUT normalization
+    """
+    try:
+        image = Image.open(BytesIO(data)).convert("RGB")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid image file")
+
+    # Resize ONLY
+    image = image.resize((IMG_SIZE, IMG_SIZE))
+
+    # Convert to numpy (uint8: 0–255)
+    image = np.array(image)
+
     return image
 
 
+# =========================
+# PREDICTION ENDPOINT
+# =========================
 @app.post("/predict")
-async def predict(
-        file: UploadFile = File(...)
-):
+async def predict(file: UploadFile = File(...)):
     image = read_file_as_image(await file.read())
-    img_batch = np.expand_dims(image,0)
+
+    # Add batch dimension → (1, 256, 256, 3)
+    img_batch = np.expand_dims(image, axis=0)
+
     predictions = MODEL.predict(img_batch)
+
     predicted_class = CLASS_NAMES[np.argmax(predictions[0])]
-    confidence = np.max(predictions[0])
+    confidence = float(np.max(predictions[0]))
+
     return {
-        'class':predicted_class,
-        'confidence':float(confidence)
+        "class": predicted_class,
+        "confidence": confidence
     }
-
-
